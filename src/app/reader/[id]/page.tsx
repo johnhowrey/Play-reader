@@ -16,6 +16,7 @@ import { exportAnnotationsAsMarkdown, downloadText } from "@/lib/export";
 import { getPlaybackSettings, savePlaybackSettings, getLastPosition, saveLastPosition } from "@/lib/settings";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
+import { useFeatureGate } from "@/lib/auth";
 
 type SidePanel = "none" | "notes";
 
@@ -23,6 +24,7 @@ export default function ReaderPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { isReadOnly, isTrialExpired } = useFeatureGate();
 
   const [script, setScript] = useState<Script | null>(null);
   const [loading, setLoading] = useState(true);
@@ -391,6 +393,21 @@ export default function ReaderPage() {
         </div>
       </header>
 
+      {/* Read-only banner for expired trials */}
+      {isReadOnly && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">
+          <p className="text-sm text-amber-800">
+            Your trial has expired. Scripts are read-only.{" "}
+            <button
+              onClick={() => router.push("/account")}
+              className="font-medium underline hover:text-amber-900"
+            >
+              Upgrade to Pro
+            </button>
+          </p>
+        </div>
+      )}
+
       {/* Main content area */}
       <div className="flex-1 flex max-w-5xl mx-auto w-full">
         {/* Script view */}
@@ -448,8 +465,8 @@ export default function ReaderPage() {
                     <AnnotationMarker
                       lineId={line.id}
                       annotations={line.annotations}
-                      onAdd={handleAddAnnotation}
-                      onDelete={handleDeleteAnnotation}
+                      onAdd={isReadOnly ? undefined : handleAddAnnotation}
+                      onDelete={isReadOnly ? undefined : handleDeleteAnnotation}
                     />
                   </div>
                 </div>

@@ -108,15 +108,57 @@ saveScript(script: Script): Promise<void>
 // Get a script by ID
 getScript(id: string): Promise<Script | undefined>
 
-// Get all scripts, sorted by last updated
-getAllScripts(): Promise<Script[]>
+// Get all scripts (optionally filtered by userId)
+getAllScripts(userId?: string): Promise<Script[]>
 
 // Delete a script
-deleteScript(id: string): Promise<void>`}</code></pre>
+deleteScript(id: string): Promise<void>
+
+// Sync helpers
+getUnsyncedScripts(userId: string): Promise<Script[]>
+markSynced(id: string): Promise<void>
+migrateLocalScriptsToUser(userId: string): Promise<void>`}</code></pre>
       <p>
         The storage layer uses IndexedDB directly (no library dependency). The
-        database is <code>play-reader</code> v1 with a single <code>scripts</code> store.
+        database is <code>play-reader</code> v2 with a single <code>scripts</code> store,
+        indexed on <code>updatedAt</code> and <code>userId</code>. All reads normalize
+        v1 data with safe defaults for <code>userId</code>, <code>syncedAt</code>, and <code>isExpired</code>.
       </p>
+
+      <h2>Auth &amp; Feature Gating</h2>
+      <pre><code>{`// Auth context (wrap app in AuthProvider)
+const { user, tier, isTrialActive, isTrialExpired, login, logout } = useAuth();
+
+// Feature gating hook
+const { canImportScript, isReadOnly, canUsePremiumVoices } = useFeatureGate();
+
+// FeatureGate component
+<FeatureGate check={(limits) => limits.cloudSync} fallback={<UpgradePrompt />}>
+  <SyncButton />
+</FeatureGate>`}</code></pre>
+
+      <h2>REST API Routes (Stubs)</h2>
+      <p>
+        API routes are defined as Next.js App Router route handlers. Currently stubs
+        — replace with real implementations when connecting a backend.
+      </p>
+      <h3>Auth — <code>/api/auth</code></h3>
+      <ul>
+        <li><code>POST</code> — Login/register (body: provider, token/email)</li>
+        <li><code>GET</code> — Get current user from session</li>
+        <li><code>DELETE</code> — Logout (clear session)</li>
+      </ul>
+      <h3>Sync — <code>/api/sync</code></h3>
+      <ul>
+        <li><code>POST</code> — Push local scripts to cloud</li>
+        <li><code>GET ?userId=xxx</code> — Pull scripts from cloud</li>
+      </ul>
+      <h3>Subscription — <code>/api/subscription</code></h3>
+      <ul>
+        <li><code>POST</code> — Create/update subscription (Stripe/App Store)</li>
+        <li><code>GET ?userId=xxx</code> — Check subscription status</li>
+        <li><code>DELETE</code> — Cancel subscription</li>
+      </ul>
 
       <h2>Export API</h2>
       <pre><code>{`// Generate Markdown from a script's annotations
@@ -153,7 +195,9 @@ unsub();            // unsubscribe`}</code></pre>
         <li><strong>Voice note recording</strong> — record audio annotations, optionally transcribe with Whisper</li>
         <li><strong>Final Draft (.fdx) import</strong> — parse the XML-based industry format</li>
         <li><strong>Collaboration</strong> — share scripts and annotations via shareable links</li>
-        <li><strong>Cloud sync</strong> — optional server-side storage (DigitalOcean App Platform)</li>
+        <li><strong>Cloud sync backend</strong> — connect API stubs to real database (Supabase, Planetscale, etc.)</li>
+        <li><strong>Payment integration</strong> — Stripe for web, App Store / Google Play for mobile</li>
+        <li><strong>OAuth providers</strong> — connect auth stubs to real Google/Apple OAuth flows</li>
       </ul>
     </>
   );

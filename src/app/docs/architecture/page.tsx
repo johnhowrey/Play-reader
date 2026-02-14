@@ -25,9 +25,14 @@ export default function Architecture() {
       <h2>Directory Structure</h2>
       <pre><code>{`src/
 ├── app/                         # Next.js App Router
-│   ├── layout.tsx               # Root layout, PWA meta
+│   ├── layout.tsx               # Root layout, PWA meta, Providers
 │   ├── page.tsx                 # Home — script list + import
 │   ├── reader/[id]/page.tsx     # Reader — playback + annotations
+│   ├── account/page.tsx         # Account — login, tier, subscription
+│   ├── api/                     # API route stubs
+│   │   ├── auth/route.ts        # Login / logout / session
+│   │   ├── sync/route.ts        # Push / pull scripts to cloud
+│   │   └── subscription/route.ts # Upgrade / cancel / status
 │   └── docs/                    # Documentation pages
 │       ├── layout.tsx           # Docs sidebar navigation
 │       ├── page.tsx             # Overview
@@ -37,21 +42,27 @@ export default function Architecture() {
 │       ├── architecture/
 │       └── api/
 ├── components/
+│   ├── Providers.tsx            # Client-side context wrapper
 │   ├── ScriptImporter.tsx       # File upload, paste, folder picker
 │   ├── ScriptPreview.tsx        # Formatted read-only script view
 │   ├── CastList.tsx             # Character list with stats
 │   ├── VoiceAssigner.tsx        # Character → voice mapping UI
 │   ├── PlaybackControls.tsx     # Transport + speed + filter toggles
-│   ├── AnnotationMarker.tsx     # Per-line note add/view
+│   ├── AnnotationMarker.tsx     # Per-line note add/view (read-only aware)
 │   ├── NotePanel.tsx            # All-notes sidebar/sheet
 │   └── KeyboardHelp.tsx         # Shortcut overlay (desktop)
 ├── hooks/
-│   └── useSwipeGesture.ts       # Touch swipe detection
+│   ├── useSwipeGesture.ts       # Touch swipe detection
+│   └── useBackgroundAudio.ts    # Silent audio keep-alive for mobile
 ├── lib/
-│   ├── types.ts                 # Core data model
-│   ├── storage.ts               # IndexedDB CRUD operations
+│   ├── types.ts                 # Core data model + User + Subscription
+│   ├── storage.ts               # IndexedDB CRUD + sync helpers
 │   ├── settings.ts              # localStorage preferences + position
 │   ├── export.ts                # Annotation → Markdown export
+│   ├── auth/
+│   │   ├── index.ts             # Re-exports
+│   │   ├── context.tsx          # AuthProvider + useAuth hook
+│   │   └── gate.tsx             # useFeatureGate + FeatureGate
 │   ├── parsers/
 │   │   ├── index.ts             # Re-exports
 │   │   ├── fountain.ts          # Fountain format parser
@@ -62,23 +73,34 @@ export default function Architecture() {
 │       ├── provider.ts          # TTSProvider interface
 │       ├── browser.ts           # Web Speech API implementation
 │       └── playback.ts          # PlaybackEngine (line sequencer)
-├── hooks/
-│   ├── useSwipeGesture.ts       # Touch swipe detection
-│   └── useBackgroundAudio.ts    # Silent audio keep-alive for mobile
 └── public/
     ├── sw.js                    # Service worker (offline caching)
     ├── manifest.json            # PWA manifest
     └── icons/                   # App icons`}</code></pre>
 
       <h2>Data Model</h2>
-      <pre><code>{`interface Script {
+      <pre><code>{`interface User {
+  id: string;
+  email: string;
+  authProvider: "local" | "google" | "apple" | "email";
+  tier: "free" | "pro";
+  trialStartedAt: number | null;
+  trialExpiresAt: number | null;
+  subscriptionExpiresAt: number | null;
+  createdAt: number;
+}
+
+interface Script {
   id: string;              // crypto.randomUUID()
+  userId: string;          // "local" for unauthenticated users
   title: string;
   source: "fountain" | "plaintext" | "scrivener";
   characters: Character[];
   lines: ScriptLine[];
   createdAt: number;       // Date.now() timestamp
   updatedAt: number;
+  syncedAt: number | null; // null = never synced to cloud
+  isExpired: boolean;      // true = read-only (trial expired)
 }
 
 interface Character {
@@ -139,15 +161,36 @@ interface Annotation {
       <h2>Storage</h2>
       <p>
         Scripts are stored in IndexedDB with the database name <code>play-reader</code>,
-        version 1. A single object store <code>scripts</code> holds full
-        <code>Script</code> objects keyed by <code>id</code>, with an index on
-        <code>updatedAt</code> for sorted listing.
+        version 2. A single object store <code>scripts</code> holds full
+        <code>Script</code> objects keyed by <code>id</code>, with indexes on
+        <code>updatedAt</code> and <code>userId</code>.
       </p>
       <p>
         The storage layer is a thin async wrapper around the raw IndexedDB API
-        — no external dependencies. Operations: <code>saveScript</code>,
+        — no external dependencies. CRUD operations: <code>saveScript</code>,
         <code>getScript</code>, <code>getAllScripts</code>, <code>deleteScript</code>.
+        Sync helpers: <code>getUnsyncedScripts</code>, <code>markSynced</code>,
+        <code>migrateLocalScriptsToUser</code>.
       </p>
+      <p>
+        All data is normalized on read — v1 scripts without <code>userId</code>
+        get <code>&quot;local&quot;</code> as default, and missing <code>syncedAt</code>/<code>isExpired</code>
+        fields get safe defaults. This ensures backward compatibility.
+      </p>
+
+      <h3>Auth &amp; Feature Gating</h3>
+      <p>
+        The <code>AuthProvider</code> context wraps the app and provides user state,
+        trial logic, and auth actions. The <code>useFeatureGate</code> hook computes
+        feature access based on subscription tier and trial status:
+      </p>
+      <ul>
+        <li><code>canImportScript(count)</code> — checks script limit</li>
+        <li><code>isReadOnly</code> — true when trial expired + free tier</li>
+        <li><code>canUsePremiumVoices</code> — Pro tier only</li>
+        <li><code>canCloudSync</code> — Pro tier only</li>
+        <li><code>exportFormats</code> — available export types</li>
+      </ul>
 
       <h3>Settings (localStorage)</h3>
       <p>

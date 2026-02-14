@@ -6,12 +6,15 @@ import ScriptImporter from "@/components/ScriptImporter";
 import CastList from "@/components/CastList";
 import ScriptPreview from "@/components/ScriptPreview";
 import { saveScript, getAllScripts, deleteScript } from "@/lib/storage";
+import { useAuth, useFeatureGate } from "@/lib/auth";
 import type { Script, ParseResult } from "@/lib/types";
 
 type View = "home" | "import" | "review";
 
 export default function Home() {
   const router = useRouter();
+  const { user, isLoading: authLoading, startTrial, trialDaysRemaining, isTrialExpired } = useAuth();
+  const { canImportScript, isReadOnly } = useFeatureGate();
   const [view, setView] = useState<View>("home");
   const [scripts, setScripts] = useState<Script[]>([]);
   const [pendingResult, setPendingResult] = useState<{
@@ -22,12 +25,12 @@ export default function Home() {
 
   const loadScripts = useCallback(async () => {
     try {
-      const all = await getAllScripts();
+      const all = await getAllScripts(user?.id);
       setScripts(all);
     } catch {
       // IndexedDB not available (SSR or private browsing)
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     loadScripts();
@@ -38,18 +41,33 @@ export default function Home() {
     setView("review");
   };
 
+  const handleImportClick = () => {
+    if (!user) {
+      // Start trial automatically on first import attempt
+      startTrial();
+    }
+    if (!canImportScript(scripts.length)) {
+      // Show upgrade prompt
+      return;
+    }
+    setView("import");
+  };
+
   const handleSave = async () => {
     if (!pendingResult) return;
     const { result, source } = pendingResult;
 
     const script: Script = {
       id: crypto.randomUUID(),
+      userId: user?.id || "local",
       title: result.title,
       source,
       characters: result.characters,
       lines: result.lines,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      syncedAt: null,
+      isExpired: false,
     };
 
     await saveScript(script);
@@ -123,7 +141,7 @@ export default function Home() {
     );
   }
 
-  // Import screen
+  // Import screen (gated — should only reach here if allowed)
   if (view === "import") {
     return (
       <div className="min-h-screen bg-background">
@@ -153,6 +171,27 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold">Play Reader</h1>
           <div className="flex items-center gap-2">
+            {/* Trial / subscription status badge */}
+            {user && trialDaysRemaining !== null && trialDaysRemaining > 0 && (
+              <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
+                {trialDaysRemaining}d trial
+              </span>
+            )}
+            {isTrialExpired && (
+              <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                Trial expired
+              </span>
+            )}
+            <button
+              onClick={() => router.push("/account")}
+              className="py-2 px-3 text-sm text-muted hover:text-foreground transition-colors"
+              aria-label="Account"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </button>
             <button
               onClick={() => router.push("/docs")}
               className="py-2 px-3 text-sm text-muted hover:text-foreground transition-colors"
@@ -160,8 +199,12 @@ export default function Home() {
               Docs
             </button>
             <button
-              onClick={() => setView("import")}
-              className="py-2 px-5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
+              onClick={handleImportClick}
+              className={`py-2 px-5 rounded-lg text-sm font-medium transition-colors ${
+                canImportScript(scripts.length)
+                  ? "bg-accent text-white hover:bg-accent/90"
+                  : "bg-muted/20 text-muted cursor-not-allowed"
+              }`}
             >
               + Import Script
             </button>
@@ -179,7 +222,7 @@ export default function Home() {
               project to hear your characters come to life.
             </p>
             <button
-              onClick={() => setView("import")}
+              onClick={handleImportClick}
               className="py-3 px-8 bg-accent text-white rounded-xl font-medium hover:bg-accent/90 transition-colors"
             >
               Import Your First Script

@@ -15,11 +15,13 @@ This is a **client-side Next.js 16 app** (App Router). No backend — all proces
 
 ### Key Directories
 
-- `src/app/` — Next.js pages (home, reader/[id], docs/*)
+- `src/app/` — Next.js pages (home, reader/[id], account, docs/*)
+- `src/app/api/` — API route stubs (auth, sync, subscription)
 - `src/components/` — React components (all "use client")
+- `src/lib/auth/` — AuthProvider context, useFeatureGate hook, FeatureGate component
 - `src/lib/parsers/` — Script format parsers (fountain, plaintext, scrivener)
 - `src/lib/tts/` — TTS provider interface + browser implementation + playback engine
-- `src/lib/` — Core types, IndexedDB storage, settings, export
+- `src/lib/` — Core types, IndexedDB storage (v2 with sync), settings, export
 - `src/hooks/` — Custom React hooks (swipe gestures, background audio)
 - `public/` — PWA manifest, service worker, icons
 
@@ -36,6 +38,8 @@ This is a **client-side Next.js 16 app** (App Router). No backend — all proces
 - `TTSProvider` (`src/lib/tts/provider.ts`) — implement this to add new TTS backends
 - `ParseResult` (`src/lib/types.ts`) — return type of all parsers
 - `PlaybackEngine` (`src/lib/tts/playback.ts`) — line sequencer with subscribe pattern
+- `AuthProvider` (`src/lib/auth/context.tsx`) — user state, trial logic, login/logout
+- `useFeatureGate` (`src/lib/auth/gate.tsx`) — tier-based feature access checks
 
 ## Conventions
 
@@ -43,7 +47,8 @@ This is a **client-side Next.js 16 app** (App Router). No backend — all proces
 - **Tailwind CSS v4** — utility-first, custom theme vars in globals.css
 - **Mobile-first** — 44px min touch targets, no hover-only interactions
 - **No external UI libraries** — vanilla Tailwind + inline SVG icons
-- **IndexedDB for data, localStorage for preferences** — no cookies, no server
+- **IndexedDB for data, localStorage for preferences** — local-first, sync-ready
+- **Auth context wraps app** — `Providers.tsx` in layout, feature gating via hooks
 - **Client components throughout** — all pages use `"use client"`
 
 ## Documentation

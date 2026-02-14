@@ -1,11 +1,58 @@
+// ─── User & Auth ────────────────────────────────────────────
+
+export type SubscriptionTier = "free" | "pro";
+export type AuthProvider = "local" | "google" | "apple" | "email";
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  authProvider: AuthProvider;
+  tier: SubscriptionTier;
+  trialStartedAt: number | null;   // null = never started
+  trialExpiresAt: number | null;   // null = no active trial
+  subscriptionExpiresAt: number | null; // null = no paid subscription
+  createdAt: number;
+}
+
+export interface TierLimits {
+  maxScripts: number;             // free = 1, pro = unlimited
+  premiumVoices: boolean;         // free = no, pro = yes
+  cloudSync: boolean;             // free = no, pro = yes
+  exportFormats: string[];        // free = ["md"], pro = ["md", "pdf", "fdx"]
+  trialDays: number;              // 30
+}
+
+export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
+  free: {
+    maxScripts: 1,
+    premiumVoices: false,
+    cloudSync: false,
+    exportFormats: ["md"],
+    trialDays: 30,
+  },
+  pro: {
+    maxScripts: Infinity,
+    premiumVoices: true,
+    cloudSync: true,
+    exportFormats: ["md", "pdf", "fdx"],
+    trialDays: 0,
+  },
+};
+
+// ─── Scripts ────────────────────────────────────────────────
+
 export interface Script {
   id: string;
+  userId: string;                // owner — "local" for unauthenticated
   title: string;
   source: "fountain" | "plaintext" | "scrivener";
   characters: Character[];
   lines: ScriptLine[];
   createdAt: number;
   updatedAt: number;
+  syncedAt: number | null;       // null = never synced to cloud
+  isExpired: boolean;            // true if trial expired (read-only mode)
 }
 
 export interface Character {

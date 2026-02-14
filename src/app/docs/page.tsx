@@ -5,18 +5,20 @@ export default function DocsOverview() {
     <>
       <h1>Play Reader</h1>
       <p className="text-lg text-muted">
-        A progressive web app for playwrights to hear their scripts read aloud
+        A progressive web app for writers to hear their scripts read aloud
         with distinct character voices, synced text display, and annotation
-        capabilities.
+        capabilities. Works for playwrights, screenwriters, audiobook authors,
+        voice actors, podcast producers, and anyone working with dialogue.
       </p>
 
       <h2>What is Play Reader?</h2>
       <p>
-        Play Reader takes your screenplay or stage play script, automatically
-        detects all the characters, assigns unique voices to each one, and reads
-        the entire script aloud — switching voices as characters speak. You see
-        the script scroll in sync with the audio, and you can annotate any line
-        with notes or &quot;revisit&quot; flags as you listen.
+        Play Reader takes your screenplay, stage play, or any dialogue-driven
+        script, automatically detects all the characters, assigns unique voices
+        to each one, and reads the entire script aloud — switching voices as
+        characters speak. You see the script scroll in sync with the audio,
+        and you can annotate any line with notes or &quot;revisit&quot; flags as
+        you listen.
       </p>
 
       <h2>Key Capabilities</h2>
@@ -26,6 +28,7 @@ export default function DocsOverview() {
         <li><strong>Multi-voice TTS</strong> — Each character gets a distinct voice via browser Speech Synthesis</li>
         <li><strong>Synced playback</strong> — Script auto-scrolls and highlights the current line</li>
         <li><strong>Annotations</strong> — Add notes and &quot;revisit&quot; flags to any line while listening</li>
+        <li><strong>Accounts &amp; sync</strong> — Free trial, Pro upgrade, cloud sync across devices (coming soon)</li>
         <li><strong>Offline-capable PWA</strong> — Install on your home screen, works without internet</li>
         <li><strong>Cross-platform</strong> — Mobile (iOS/Android), tablet, and desktop</li>
       </ul>
@@ -41,11 +44,11 @@ export default function DocsOverview() {
 
       <h2>Technology</h2>
       <p>
-        Built with Next.js, TypeScript, and Tailwind CSS. All processing happens
-        client-side — your scripts never leave your device. Data is stored in
-        IndexedDB. TTS uses the browser&apos;s built-in Web Speech API (free, no API
-        key required), with an extensible provider system for future premium
-        voices.
+        Built with Next.js, TypeScript, and Tailwind CSS. Core processing happens
+        client-side. Data is stored locally in IndexedDB with optional cloud sync
+        for Pro users. TTS uses the browser&apos;s built-in Web Speech API (free,
+        no API key required), with an extensible provider system for future
+        premium voices.
       </p>
     </>
   );

@@ -122,14 +122,39 @@ export default function Features() {
         <li>Media Session API for lock screen playback controls</li>
       </ul>
 
+      <h2>Accounts &amp; Subscriptions</h2>
+      <h3>Free Trial</h3>
+      <ul>
+        <li>30-day trial starts automatically on first import</li>
+        <li>Full access during trial — 1 script, browser voices, Markdown export</li>
+        <li>Trial status badge visible in the header</li>
+        <li>After trial expires: scripts become read-only (view + listen, no new annotations)</li>
+      </ul>
+
+      <h3>Pro Plan</h3>
+      <ul>
+        <li>Unlimited scripts</li>
+        <li>Premium TTS voices (API-based providers coming soon)</li>
+        <li>Cloud sync — access scripts from any device</li>
+        <li>Export to Markdown, PDF, and Final Draft (.fdx)</li>
+      </ul>
+
+      <h3>Account Management</h3>
+      <ul>
+        <li>Sign in with Google, Apple, or email</li>
+        <li>Account page shows tier, trial status, and upgrade option</li>
+        <li>Local scripts migrate to your account on first sign-in</li>
+        <li>Sign out returns to local-only mode</li>
+      </ul>
+
       <h2>Data &amp; Privacy</h2>
       <ul>
         <li>All processing happens client-side in the browser</li>
-        <li>Scripts never leave your device</li>
-        <li>No server, no account, no tracking</li>
-        <li>Scripts stored in IndexedDB — persists across sessions</li>
+        <li>Scripts stored locally in IndexedDB — always available offline</li>
+        <li>Optional cloud sync for Pro users (scripts encrypted in transit)</li>
         <li>Preferences stored in localStorage</li>
         <li>Delete scripts any time from the home screen</li>
+        <li>No tracking or analytics</li>
       </ul>
     </>
   );

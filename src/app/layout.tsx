@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Play Reader",
@@ -29,7 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <ServiceWorkerRegistrar />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
