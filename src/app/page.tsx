@@ -152,12 +152,20 @@ export default function Home() {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold">Play Reader</h1>
-          <button
-            onClick={() => setView("import")}
-            className="py-2 px-5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
-          >
-            + Import Script
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/docs")}
+              className="py-2 px-3 text-sm text-muted hover:text-foreground transition-colors"
+            >
+              Docs
+            </button>
+            <button
+              onClick={() => setView("import")}
+              className="py-2 px-5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
+            >
+              + Import Script
+            </button>
+          </div>
         </div>
       </header>
 

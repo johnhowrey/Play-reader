@@ -11,7 +11,9 @@ import VoiceAssigner from "@/components/VoiceAssigner";
 import PlaybackControls from "@/components/PlaybackControls";
 import AnnotationMarker from "@/components/AnnotationMarker";
 import NotePanel from "@/components/NotePanel";
+import KeyboardHelp from "@/components/KeyboardHelp";
 import { exportAnnotationsAsMarkdown, downloadText } from "@/lib/export";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 type SidePanel = "none" | "notes";
 
@@ -231,6 +233,12 @@ export default function ReaderPage() {
     downloadText(md, filename);
   };
 
+  // Swipe gestures for mobile
+  useSwipeGesture(scriptContainerRef, {
+    onSwipeLeft: handleSkipForward,
+    onSwipeRight: handleSkipBack,
+  });
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -309,15 +317,18 @@ export default function ReaderPage() {
       {/* Header */}
       <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 engineRef.current?.stop();
                 router.push("/");
               }}
-              className="text-sm text-muted hover:text-foreground"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted hover:text-foreground active:text-foreground rounded-lg"
+              aria-label="Go back"
             >
-              &larr;
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
             </button>
             <h1 className="font-semibold text-sm truncate max-w-[200px] sm:max-w-none">
               {script.title}
@@ -327,7 +338,7 @@ export default function ReaderPage() {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setSidePanel(sidePanel === "notes" ? "none" : "notes")}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              className={`min-h-[44px] px-3 text-sm rounded-lg transition-colors active:scale-95 ${
                 sidePanel === "notes"
                   ? "bg-accent text-white"
                   : "text-muted hover:bg-surface-hover"
@@ -340,10 +351,12 @@ export default function ReaderPage() {
             </button>
             <button
               onClick={handleExportNotes}
-              className="px-3 py-1.5 text-xs text-muted hover:bg-surface-hover rounded-lg transition-colors"
-              title="Export notes as Markdown"
+              className="min-h-[44px] px-3 text-sm text-muted hover:bg-surface-hover active:bg-surface-hover rounded-lg transition-colors"
+              aria-label="Export notes as Markdown"
             >
-              Export
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+              </svg>
             </button>
           </div>
         </div>
@@ -382,12 +395,12 @@ export default function ReaderPage() {
                     if (el) lineRefs.current.set(line.id, el);
                   }}
                   onClick={() => handleLineClick(index)}
-                  className={`group flex items-start gap-2 py-1.5 px-3 rounded-lg transition-all cursor-pointer ${
+                  className={`flex items-start gap-1 py-2 px-3 rounded-lg transition-all cursor-pointer ${
                     isActive
                       ? "bg-accent/10 ring-1 ring-accent/30"
                       : isPast
                       ? "opacity-50"
-                      : "hover:bg-surface-hover"
+                      : "hover:bg-surface-hover active:bg-surface-hover"
                   }`}
                 >
                   {/* Line content */}
@@ -399,8 +412,10 @@ export default function ReaderPage() {
                     />
                   </div>
 
-                  {/* Annotation button */}
-                  <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Annotation button — always visible on mobile, hover-reveal on desktop */}
+                  <div className="flex-shrink-0 sm:opacity-0 sm:hover:opacity-100 sm:focus-within:opacity-100 sm:group-hover:opacity-100 transition-opacity"
+                    style={line.annotations.length > 0 ? { opacity: 1 } : undefined}
+                  >
                     <AnnotationMarker
                       lineId={line.id}
                       annotations={line.annotations}
@@ -408,15 +423,6 @@ export default function ReaderPage() {
                       onDelete={handleDeleteAnnotation}
                     />
                   </div>
-
-                  {/* Show annotation marker if has annotations (always visible) */}
-                  {line.annotations.length > 0 && (
-                    <div className="flex-shrink-0 group-hover:hidden">
-                      <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs">
-                        {line.annotations.length}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -455,8 +461,11 @@ export default function ReaderPage() {
         </div>
       )}
 
+      {/* Keyboard shortcut help — desktop only */}
+      <KeyboardHelp />
+
       {/* Playback controls — fixed at bottom */}
-      <div className="fixed bottom-0 inset-x-0 z-20 bg-background/90 backdrop-blur-sm border-t border-border p-4">
+      <div className="fixed bottom-0 inset-x-0 z-20 bg-background/90 backdrop-blur-sm border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="max-w-2xl mx-auto">
           <PlaybackControls
             state={playbackState}

@@ -62,13 +62,13 @@ export default function PlaybackControls({
         </div>
       </div>
 
-      {/* Main controls */}
-      <div className="flex items-center justify-center gap-4">
+      {/* Main controls — min 44px touch targets throughout */}
+      <div className="flex items-center justify-center gap-2 sm:gap-4">
         <button
           onClick={onSkipBack}
           disabled={state.status === "idle"}
-          className="p-2 rounded-full hover:bg-surface-hover disabled:opacity-30 transition-colors"
-          title="Previous line"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-surface-hover active:bg-surface-hover disabled:opacity-30 transition-colors"
+          aria-label="Previous line"
         >
           <SkipBackIcon />
         </button>
@@ -76,24 +76,24 @@ export default function PlaybackControls({
         {state.status === "idle" ? (
           <button
             onClick={onPlay}
-            className="p-4 rounded-full bg-accent text-white hover:bg-accent/90 transition-colors"
-            title="Play"
+            className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-full bg-accent text-white hover:bg-accent/90 active:scale-95 transition-all"
+            aria-label="Play"
           >
             <PlayIcon />
           </button>
         ) : state.status === "paused" ? (
           <button
             onClick={onResume}
-            className="p-4 rounded-full bg-accent text-white hover:bg-accent/90 transition-colors"
-            title="Resume"
+            className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-full bg-accent text-white hover:bg-accent/90 active:scale-95 transition-all"
+            aria-label="Resume"
           >
             <PlayIcon />
           </button>
         ) : (
           <button
             onClick={onPause}
-            className="p-4 rounded-full bg-accent text-white hover:bg-accent/90 transition-colors"
-            title="Pause"
+            className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-full bg-accent text-white hover:bg-accent/90 active:scale-95 transition-all"
+            aria-label="Pause"
           >
             <PauseIcon />
           </button>
@@ -102,8 +102,8 @@ export default function PlaybackControls({
         <button
           onClick={onSkipForward}
           disabled={state.status === "idle"}
-          className="p-2 rounded-full hover:bg-surface-hover disabled:opacity-30 transition-colors"
-          title="Next line"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-surface-hover active:bg-surface-hover disabled:opacity-30 transition-colors"
+          aria-label="Next line"
         >
           <SkipForwardIcon />
         </button>
@@ -111,8 +111,8 @@ export default function PlaybackControls({
         {state.status !== "idle" && (
           <button
             onClick={onStop}
-            className="p-2 rounded-full hover:bg-surface-hover transition-colors"
-            title="Stop"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-surface-hover active:bg-surface-hover transition-colors"
+            aria-label="Stop"
           >
             <StopIcon />
           </button>
