@@ -50,6 +50,7 @@ export default function Architecture() {
 ├── lib/
 │   ├── types.ts                 # Core data model
 │   ├── storage.ts               # IndexedDB CRUD operations
+│   ├── settings.ts              # localStorage preferences + position
 │   ├── export.ts                # Annotation → Markdown export
 │   ├── parsers/
 │   │   ├── index.ts             # Re-exports
@@ -61,7 +62,11 @@ export default function Architecture() {
 │       ├── provider.ts          # TTSProvider interface
 │       ├── browser.ts           # Web Speech API implementation
 │       └── playback.ts          # PlaybackEngine (line sequencer)
+├── hooks/
+│   ├── useSwipeGesture.ts       # Touch swipe detection
+│   └── useBackgroundAudio.ts    # Silent audio keep-alive for mobile
 └── public/
+    ├── sw.js                    # Service worker (offline caching)
     ├── manifest.json            # PWA manifest
     └── icons/                   # App icons`}</code></pre>
 
@@ -142,6 +147,39 @@ interface Annotation {
         The storage layer is a thin async wrapper around the raw IndexedDB API
         — no external dependencies. Operations: <code>saveScript</code>,
         <code>getScript</code>, <code>getAllScripts</code>, <code>deleteScript</code>.
+      </p>
+
+      <h3>Settings (localStorage)</h3>
+      <p>
+        User preferences are stored in <code>localStorage</code> under the
+        <code>play-reader:</code> prefix:
+      </p>
+      <ul>
+        <li><code>play-reader:playback</code> — rate, skip toggles, narrator voice ID</li>
+        <li><code>play-reader:position:&#123;scriptId&#125;</code> — last playback line index per script</li>
+      </ul>
+
+      <h2>Offline &amp; PWA</h2>
+      <p>
+        The service worker (<code>public/sw.js</code>) uses a split caching strategy:
+      </p>
+      <ul>
+        <li><strong>Static assets</strong> (JS, CSS, icons, manifest) — cache-first with network update</li>
+        <li><strong>HTML pages</strong> — network-first with cache fallback</li>
+        <li><strong>Everything else</strong> — network with cache fallback</li>
+      </ul>
+      <p>
+        Scripts are stored in IndexedDB, which persists independently of the service
+        worker cache. This means imported scripts are available offline regardless
+        of cache state.
+      </p>
+
+      <h3>Background Audio</h3>
+      <p>
+        On mobile, browsers may suspend Web Speech when the page is backgrounded.
+        The <code>useBackgroundAudio</code> hook plays a silent <code>AudioContext</code>
+        buffer while TTS is active, keeping the page in a &quot;playing audio&quot; state
+        that prevents suspension.
       </p>
 
       <h2>Responsive Design</h2>

@@ -104,12 +104,21 @@ export default function Features() {
         <li>Both touch and keyboard input supported</li>
       </ul>
 
+      <h2>Session Persistence</h2>
+      <ul>
+        <li><strong>Playback position saved</strong> — resume where you left off when reopening a script</li>
+        <li><strong>Settings persist</strong> — speed, skip toggles, narrator voice remembered across sessions</li>
+        <li><strong>Voice assignments saved</strong> — character voice mappings stored with each script</li>
+        <li><strong>Tap any line to play from there</strong> — works even when playback is idle</li>
+      </ul>
+
       <h2>Progressive Web App</h2>
       <ul>
         <li>Installable on home screen (iOS, Android, desktop)</li>
         <li>Standalone display mode — no browser chrome</li>
         <li>Web app manifest with icons and theme color</li>
-        <li>Scripts stored locally in IndexedDB — works offline</li>
+        <li>Service worker with offline caching (network-first for pages, cache-first for assets)</li>
+        <li>Background audio keep-alive — TTS continues when phone is locked</li>
         <li>Media Session API for lock screen playback controls</li>
       </ul>
 
@@ -118,7 +127,8 @@ export default function Features() {
         <li>All processing happens client-side in the browser</li>
         <li>Scripts never leave your device</li>
         <li>No server, no account, no tracking</li>
-        <li>Data stored in IndexedDB — persists across sessions</li>
+        <li>Scripts stored in IndexedDB — persists across sessions</li>
+        <li>Preferences stored in localStorage</li>
         <li>Delete scripts any time from the home screen</li>
       </ul>
     </>

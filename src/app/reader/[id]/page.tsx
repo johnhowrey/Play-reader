@@ -13,7 +13,9 @@ import AnnotationMarker from "@/components/AnnotationMarker";
 import NotePanel from "@/components/NotePanel";
 import KeyboardHelp from "@/components/KeyboardHelp";
 import { exportAnnotationsAsMarkdown, downloadText } from "@/lib/export";
+import { getPlaybackSettings, savePlaybackSettings, getLastPosition, saveLastPosition } from "@/lib/settings";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 
 type SidePanel = "none" | "notes";
 
@@ -31,24 +33,32 @@ export default function ReaderPage() {
     currentCharIndex: 0,
     currentCharLength: 0,
   });
-  const [rate, setRate] = useState(1.0);
-  const [skipStageDirections, setSkipStageDirections] = useState(false);
-  const [skipActions, setSkipActions] = useState(false);
-  const [stageDirectionVoiceId, setStageDirectionVoiceId] = useState("");
+  const [rate, setRate] = useState(() => getPlaybackSettings().rate);
+  const [skipStageDirections, setSkipStageDirections] = useState(() => getPlaybackSettings().skipStageDirections);
+  const [skipActions, setSkipActions] = useState(() => getPlaybackSettings().skipActions);
+  const [stageDirectionVoiceId, setStageDirectionVoiceId] = useState(() => getPlaybackSettings().stageDirectionVoiceId);
   const [sidePanel, setSidePanel] = useState<SidePanel>("none");
+  const [resumeLineIndex, setResumeLineIndex] = useState(0);
 
   const providerRef = useRef<BrowserTTSProvider | null>(null);
   const engineRef = useRef<PlaybackEngine | null>(null);
   const lineRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const scriptContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load script
+  // Background audio keep-alive for mobile
+  useBackgroundAudio(playbackState.status === "playing");
+
+  // Load script + resume position
   useEffect(() => {
     (async () => {
       try {
         const s = await getScript(id);
         if (s) {
           setScript(s);
+          const pos = getLastPosition(id);
+          if (pos > 0 && pos < s.lines.length) {
+            setResumeLineIndex(pos);
+          }
         }
       } finally {
         setLoading(false);
@@ -84,6 +94,18 @@ export default function ReaderPage() {
     if (!engineRef.current) return;
     engineRef.current.setOptions({ rate, skipStageDirections, skipActions });
   }, [rate, skipStageDirections, skipActions]);
+
+  // Persist playback settings when they change
+  useEffect(() => {
+    savePlaybackSettings({ rate, skipStageDirections, skipActions, stageDirectionVoiceId });
+  }, [rate, skipStageDirections, skipActions, stageDirectionVoiceId]);
+
+  // Save position periodically during playback
+  useEffect(() => {
+    if (playbackState.currentLineIndex >= 0) {
+      saveLastPosition(id, playbackState.currentLineIndex);
+    }
+  }, [playbackState.currentLineIndex, id]);
 
   // Auto-scroll to current line
   useEffect(() => {
@@ -192,10 +214,13 @@ export default function ReaderPage() {
     []
   );
 
-  const handlePlay = () => engineRef.current?.play(0);
+  const handlePlay = () => engineRef.current?.play(resumeLineIndex);
   const handlePause = () => engineRef.current?.pause();
   const handleResume = () => engineRef.current?.resume();
-  const handleStop = () => engineRef.current?.stop();
+  const handleStop = () => {
+    engineRef.current?.stop();
+    setResumeLineIndex(0);
+  };
 
   const handleSkipBack = () => {
     const idx = playbackState.currentLineIndex;
@@ -210,8 +235,12 @@ export default function ReaderPage() {
   };
 
   const handleLineClick = (index: number) => {
-    if (playbackState.status !== "idle") {
+    if (playbackState.status === "playing" || playbackState.status === "paused") {
       engineRef.current?.skipToLine(index);
+    } else {
+      // When idle, set this as the start point and begin playback
+      setResumeLineIndex(index);
+      engineRef.current?.play(index);
     }
   };
 
@@ -255,7 +284,7 @@ export default function ReaderPage() {
         case " ": // Space = play/pause
           e.preventDefault();
           if (playbackState.status === "idle") {
-            engineRef.current?.play(0);
+            engineRef.current?.play(resumeLineIndex);
           } else if (playbackState.status === "playing") {
             engineRef.current?.pause();
           } else if (playbackState.status === "paused") {
