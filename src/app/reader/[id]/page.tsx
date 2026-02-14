@@ -11,6 +11,7 @@ import VoiceAssigner from "@/components/VoiceAssigner";
 import PlaybackControls from "@/components/PlaybackControls";
 import AnnotationMarker from "@/components/AnnotationMarker";
 import NotePanel from "@/components/NotePanel";
+import { exportAnnotationsAsMarkdown, downloadText } from "@/lib/export";
 
 type SidePanel = "none" | "notes";
 
@@ -29,6 +30,8 @@ export default function ReaderPage() {
     currentCharLength: 0,
   });
   const [rate, setRate] = useState(1.0);
+  const [skipStageDirections, setSkipStageDirections] = useState(false);
+  const [skipActions, setSkipActions] = useState(false);
   const [stageDirectionVoiceId, setStageDirectionVoiceId] = useState("");
   const [sidePanel, setSidePanel] = useState<SidePanel>("none");
 
@@ -77,8 +80,8 @@ export default function ReaderPage() {
 
   useEffect(() => {
     if (!engineRef.current) return;
-    engineRef.current.setOptions({ rate });
-  }, [rate]);
+    engineRef.current.setOptions({ rate, skipStageDirections, skipActions });
+  }, [rate, skipStageDirections, skipActions]);
 
   // Auto-scroll to current line
   useEffect(() => {
@@ -221,6 +224,62 @@ export default function ReaderPage() {
     setSidePanel("none");
   };
 
+  const handleExportNotes = () => {
+    if (!script) return;
+    const md = exportAnnotationsAsMarkdown(script);
+    const filename = `${script.title.replace(/[^a-zA-Z0-9]/g, "_")}_notes.md`;
+    downloadText(md, filename);
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't capture if typing in input/textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case " ": // Space = play/pause
+          e.preventDefault();
+          if (playbackState.status === "idle") {
+            engineRef.current?.play(0);
+          } else if (playbackState.status === "playing") {
+            engineRef.current?.pause();
+          } else if (playbackState.status === "paused") {
+            engineRef.current?.resume();
+          }
+          break;
+        case "Escape": // Esc = stop
+          engineRef.current?.stop();
+          break;
+        case "ArrowLeft": // Left = skip back
+          e.preventDefault();
+          handleSkipBack();
+          break;
+        case "ArrowRight": // Right = skip forward
+          e.preventDefault();
+          handleSkipForward();
+          break;
+        case "ArrowUp": // Up = speed up
+          e.preventDefault();
+          setRate((r) => Math.min(2.0, Math.round((r + 0.1) * 10) / 10));
+          break;
+        case "ArrowDown": // Down = slow down
+          e.preventDefault();
+          setRate((r) => Math.max(0.5, Math.round((r - 0.1) * 10) / 10));
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -265,7 +324,7 @@ export default function ReaderPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setSidePanel(sidePanel === "notes" ? "none" : "notes")}
               className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
@@ -278,6 +337,13 @@ export default function ReaderPage() {
               {script.lines.some((l) => l.annotations.length > 0) && (
                 <span className="ml-1 w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
               )}
+            </button>
+            <button
+              onClick={handleExportNotes}
+              className="px-3 py-1.5 text-xs text-muted hover:bg-surface-hover rounded-lg transition-colors"
+              title="Export notes as Markdown"
+            >
+              Export
             </button>
           </div>
         </div>
@@ -396,6 +462,8 @@ export default function ReaderPage() {
             state={playbackState}
             rate={rate}
             totalLines={script.lines.length}
+            skipStageDirections={skipStageDirections}
+            skipActions={skipActions}
             onPlay={handlePlay}
             onPause={handlePause}
             onResume={handleResume}
@@ -403,6 +471,8 @@ export default function ReaderPage() {
             onRateChange={setRate}
             onSkipBack={handleSkipBack}
             onSkipForward={handleSkipForward}
+            onToggleSkipStageDirections={() => setSkipStageDirections((v) => !v)}
+            onToggleSkipActions={() => setSkipActions((v) => !v)}
           />
         </div>
       </div>

@@ -6,6 +6,8 @@ interface PlaybackControlsProps {
   state: PlaybackState;
   rate: number;
   totalLines: number;
+  skipStageDirections: boolean;
+  skipActions: boolean;
   onPlay: () => void;
   onPause: () => void;
   onResume: () => void;
@@ -13,12 +15,16 @@ interface PlaybackControlsProps {
   onRateChange: (rate: number) => void;
   onSkipBack: () => void;
   onSkipForward: () => void;
+  onToggleSkipStageDirections: () => void;
+  onToggleSkipActions: () => void;
 }
 
 export default function PlaybackControls({
   state,
   rate,
   totalLines,
+  skipStageDirections,
+  skipActions,
   onPlay,
   onPause,
   onResume,
@@ -26,6 +32,8 @@ export default function PlaybackControls({
   onRateChange,
   onSkipBack,
   onSkipForward,
+  onToggleSkipStageDirections,
+  onToggleSkipActions,
 }: PlaybackControlsProps) {
   const progress =
     state.currentLineIndex >= 0 && totalLines > 0
@@ -111,7 +119,7 @@ export default function PlaybackControls({
         )}
       </div>
 
-      {/* Speed control */}
+      {/* Speed + filter controls */}
       <div className="flex items-center justify-center gap-3 mt-4">
         <span className="text-xs text-muted w-12 text-right">Speed</span>
         <input
@@ -124,6 +132,30 @@ export default function PlaybackControls({
           className="flex-1 max-w-48 accent-accent"
         />
         <span className="text-xs font-mono w-10">{rate.toFixed(1)}x</span>
+      </div>
+
+      {/* Skip toggles */}
+      <div className="flex items-center justify-center gap-3 mt-3">
+        <button
+          onClick={onToggleSkipStageDirections}
+          className={`text-xs px-3 py-1 rounded-full transition-colors ${
+            skipStageDirections
+              ? "bg-accent/20 text-accent"
+              : "bg-border/50 text-muted"
+          }`}
+        >
+          {skipStageDirections ? "Skipping" : "Skip"} directions
+        </button>
+        <button
+          onClick={onToggleSkipActions}
+          className={`text-xs px-3 py-1 rounded-full transition-colors ${
+            skipActions
+              ? "bg-accent/20 text-accent"
+              : "bg-border/50 text-muted"
+          }`}
+        >
+          {skipActions ? "Skipping" : "Skip"} actions
+        </button>
       </div>
     </div>
   );
