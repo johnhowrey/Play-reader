@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import ScriptImporter from "@/components/ScriptImporter";
 import CastList from "@/components/CastList";
 import ScriptPreview from "@/components/ScriptPreview";
@@ -10,6 +11,7 @@ import type { Script, ParseResult } from "@/lib/types";
 type View = "home" | "import" | "review";
 
 export default function Home() {
+  const router = useRouter();
   const [view, setView] = useState<View>("home");
   const [scripts, setScripts] = useState<Script[]>([]);
   const [pendingResult, setPendingResult] = useState<{
@@ -52,9 +54,8 @@ export default function Home() {
 
     await saveScript(script);
     setPendingResult(null);
-    setSelectedScript(script);
-    setView("home");
-    loadScripts();
+    // Navigate directly to the reader
+    router.push(`/reader/${script.id}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -215,16 +216,27 @@ export default function Home() {
                   </div>
                 </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(script.id);
-                  }}
-                  className="text-muted hover:text-red-500 text-sm p-2 transition-colors"
-                  title="Delete script"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/reader/${script.id}`);
+                    }}
+                    className="py-1.5 px-3 bg-accent text-white rounded-lg text-xs font-medium hover:bg-accent/90 transition-colors"
+                  >
+                    Read
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(script.id);
+                    }}
+                    className="text-muted hover:text-red-500 text-sm p-2 transition-colors"
+                    title="Delete script"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -233,14 +245,22 @@ export default function Home() {
         {/* Selected script detail */}
         {selectedScript && (
           <div className="mt-8 space-y-8">
-            <div className="flex items-baseline justify-between">
+            <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{selectedScript.title}</h2>
-              <button
-                onClick={() => setSelectedScript(null)}
-                className="text-sm text-muted hover:text-foreground"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push(`/reader/${selectedScript.id}`)}
+                  className="py-2 px-5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
+                >
+                  Read Aloud
+                </button>
+                <button
+                  onClick={() => setSelectedScript(null)}
+                  className="text-sm text-muted hover:text-foreground p-2"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <CastList
